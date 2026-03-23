@@ -1,0 +1,1241 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>QualityPulse: CAPA & Retraining Forecast</title>
+<link href="https://fonts.googleapis.com/css2?family=DM+Serif+Display:ital@0;1&family=IBM+Plex+Mono:wght@400;500;600&family=DM+Sans:wght@300;400;500;600&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --bg: #05080f;
+    --surface: #0c1220;
+    --surface2: #121929;
+    --border: #1e2d45;
+    --border2: #253550;
+    --accent: #00e5c3;
+    --accent2: #0077ff;
+    --accent3: #ff5c5c;
+    --accent4: #f5a623;
+    --text: #e8eef8;
+    --text-dim: #7a90b0;
+    --text-muted: #3d5070;
+    --green: #00e5a0;
+    --red: #ff4d6d;
+    --yellow: #ffd166;
+    --purple: #b388ff;
+  }
+
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+
+  body {
+    background: var(--bg);
+    color: var(--text);
+    font-family: 'DM Sans', sans-serif;
+    min-height: 100vh;
+    overflow-x: hidden;
+  }
+
+  /* Subtle grid background */
+  body::before {
+    content: '';
+    position: fixed;
+    inset: 0;
+    background-image:
+      linear-gradient(rgba(0,229,195,0.03) 1px, transparent 1px),
+      linear-gradient(90deg, rgba(0,229,195,0.03) 1px, transparent 1px);
+    background-size: 40px 40px;
+    pointer-events: none;
+    z-index: 0;
+  }
+
+  /* ─── SIDEBAR ─── */
+  .sidebar {
+    position: fixed;
+    left: 0; top: 0; bottom: 0;
+    width: 220px;
+    background: var(--surface);
+    border-right: 1px solid var(--border);
+    display: flex;
+    flex-direction: column;
+    z-index: 100;
+    padding: 0;
+  }
+
+  .logo {
+    padding: 28px 24px 20px;
+    border-bottom: 1px solid var(--border);
+  }
+
+  .logo-mark {
+    font-family: 'DM Serif Display', serif;
+    font-size: 1.3rem;
+    color: var(--accent);
+    letter-spacing: -0.5px;
+  }
+
+  .logo-sub {
+    font-family: 'IBM Plex Mono', monospace;
+    font-size: 0.6rem;
+    color: var(--text-muted);
+    letter-spacing: 2px;
+    text-transform: uppercase;
+    margin-top: 2px;
+  }
+
+  .nav {
+    flex: 1;
+    padding: 16px 0;
+  }
+
+  .nav-section {
+    font-family: 'IBM Plex Mono', monospace;
+    font-size: 0.55rem;
+    color: var(--text-muted);
+    letter-spacing: 2px;
+    text-transform: uppercase;
+    padding: 12px 24px 6px;
+  }
+
+  .nav-item {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    padding: 9px 24px;
+    font-size: 0.82rem;
+    font-weight: 500;
+    color: var(--text-dim);
+    cursor: pointer;
+    transition: all 0.15s;
+    border-left: 2px solid transparent;
+  }
+
+  .nav-item:hover { background: var(--surface2); color: var(--text); }
+  .nav-item.active {
+    color: var(--accent);
+    border-left-color: var(--accent);
+    background: rgba(0,229,195,0.05);
+  }
+
+  .nav-item .icon { font-size: 1rem; width: 18px; text-align: center; }
+
+  .nav-badge {
+    margin-left: auto;
+    background: var(--red);
+    color: #fff;
+    font-size: 0.6rem;
+    font-family: 'IBM Plex Mono', monospace;
+    font-weight: 600;
+    padding: 1px 6px;
+    border-radius: 20px;
+  }
+
+  .sidebar-footer {
+    padding: 16px 24px;
+    border-top: 1px solid var(--border);
+  }
+
+  .system-status {
+    font-family: 'IBM Plex Mono', monospace;
+    font-size: 0.6rem;
+    color: var(--text-muted);
+    display: flex;
+    align-items: center;
+    gap: 6px;
+  }
+
+  .status-dot {
+    width: 6px; height: 6px;
+    border-radius: 50%;
+    background: var(--green);
+    animation: pulse-dot 2s infinite;
+  }
+
+  @keyframes pulse-dot {
+    0%, 100% { opacity: 1; }
+    50% { opacity: 0.3; }
+  }
+
+  /* ─── MAIN ─── */
+  .main {
+    margin-left: 220px;
+    position: relative;
+    z-index: 1;
+  }
+
+  /* ─── TOPBAR ─── */
+  .topbar {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 18px 36px;
+    border-bottom: 1px solid var(--border);
+    background: rgba(12,18,32,0.8);
+    backdrop-filter: blur(10px);
+    position: sticky;
+    top: 0;
+    z-index: 50;
+  }
+
+  .page-title {
+    font-family: 'DM Serif Display', serif;
+    font-size: 1.4rem;
+    color: var(--text);
+    letter-spacing: -0.3px;
+  }
+
+  .page-sub {
+    font-size: 0.75rem;
+    color: var(--text-muted);
+    font-family: 'IBM Plex Mono', monospace;
+    margin-top: 1px;
+  }
+
+  .topbar-right {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+  }
+
+  .filter-pill {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    padding: 6px 14px;
+    border: 1px solid var(--border2);
+    border-radius: 6px;
+    font-size: 0.75rem;
+    font-family: 'IBM Plex Mono', monospace;
+    color: var(--text-dim);
+    cursor: pointer;
+    background: var(--surface2);
+    transition: all 0.15s;
+  }
+
+  .filter-pill:hover { border-color: var(--accent); color: var(--accent); }
+  .filter-pill.active { border-color: var(--accent); color: var(--accent); background: rgba(0,229,195,0.08); }
+
+  .export-btn {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    padding: 6px 16px;
+    background: var(--accent);
+    color: #05080f;
+    font-size: 0.75rem;
+    font-family: 'IBM Plex Mono', monospace;
+    font-weight: 600;
+    border: none;
+    border-radius: 6px;
+    cursor: pointer;
+    transition: all 0.15s;
+  }
+
+  .export-btn:hover { background: #00ffda; }
+
+  /* ─── CONTENT ─── */
+  .content {
+    padding: 30px 36px;
+    display: flex;
+    flex-direction: column;
+    gap: 26px;
+  }
+
+  /* ─── KPI ROW ─── */
+  .kpi-row {
+    display: grid;
+    grid-template-columns: repeat(5, 1fr);
+    gap: 16px;
+  }
+
+  .kpi-card {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    padding: 18px 20px;
+    position: relative;
+    overflow: hidden;
+    transition: transform 0.2s, border-color 0.2s;
+    cursor: default;
+  }
+
+  .kpi-card:hover { transform: translateY(-2px); border-color: var(--border2); }
+
+  .kpi-card::after {
+    content: '';
+    position: absolute;
+    bottom: 0; left: 0; right: 0;
+    height: 2px;
+    border-radius: 0 0 10px 10px;
+  }
+
+  .kpi-card.green::after { background: var(--green); }
+  .kpi-card.red::after { background: var(--red); }
+  .kpi-card.yellow::after { background: var(--yellow); }
+  .kpi-card.blue::after { background: var(--accent2); }
+  .kpi-card.purple::after { background: var(--purple); }
+
+  .kpi-label {
+    font-family: 'IBM Plex Mono', monospace;
+    font-size: 0.62rem;
+    color: var(--text-muted);
+    text-transform: uppercase;
+    letter-spacing: 1.5px;
+    margin-bottom: 10px;
+  }
+
+  .kpi-value {
+    font-family: 'DM Serif Display', serif;
+    font-size: 2rem;
+    line-height: 1;
+    margin-bottom: 6px;
+  }
+
+  .kpi-card.green .kpi-value { color: var(--green); }
+  .kpi-card.red .kpi-value { color: var(--red); }
+  .kpi-card.yellow .kpi-value { color: var(--yellow); }
+  .kpi-card.blue .kpi-value { color: var(--accent2); }
+  .kpi-card.purple .kpi-value { color: var(--purple); }
+
+  .kpi-delta {
+    font-size: 0.72rem;
+    font-family: 'IBM Plex Mono', monospace;
+    display: flex;
+    align-items: center;
+    gap: 4px;
+  }
+
+  .delta-up { color: var(--green); }
+  .delta-down { color: var(--red); }
+  .delta-neutral { color: var(--text-muted); }
+
+  /* ─── TWO-COL ─── */
+  .two-col { display: grid; grid-template-columns: 1fr 1fr; gap: 20px; }
+  .three-col { display: grid; grid-template-columns: 1.6fr 1fr 1fr; gap: 20px; }
+
+  /* ─── CARD ─── */
+  .card {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    overflow: hidden;
+  }
+
+  .card-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 16px 22px 14px;
+    border-bottom: 1px solid var(--border);
+  }
+
+  .card-title {
+    font-family: 'DM Serif Display', serif;
+    font-size: 1rem;
+    color: var(--text);
+    letter-spacing: -0.2px;
+  }
+
+  .card-subtitle {
+    font-family: 'IBM Plex Mono', monospace;
+    font-size: 0.6rem;
+    color: var(--text-muted);
+    margin-top: 2px;
+    text-transform: uppercase;
+    letter-spacing: 1px;
+  }
+
+  .card-body { padding: 20px 22px; }
+
+  .tag {
+    display: inline-flex;
+    align-items: center;
+    padding: 3px 10px;
+    border-radius: 20px;
+    font-family: 'IBM Plex Mono', monospace;
+    font-size: 0.6rem;
+    font-weight: 600;
+    letter-spacing: 0.5px;
+  }
+
+  .tag.open { background: rgba(255,77,109,0.15); color: var(--red); border: 1px solid rgba(255,77,109,0.3); }
+  .tag.in-progress { background: rgba(245,166,35,0.15); color: var(--yellow); border: 1px solid rgba(245,166,35,0.3); }
+  .tag.closed { background: rgba(0,229,160,0.12); color: var(--green); border: 1px solid rgba(0,229,160,0.3); }
+  .tag.overdue { background: rgba(255,92,92,0.15); color: #ff5c5c; border: 1px solid rgba(255,92,92,0.3); }
+  .tag.critical { background: rgba(255,77,109,0.2); color: var(--red); border: 1px solid rgba(255,77,109,0.4); }
+  .tag.major { background: rgba(245,166,35,0.15); color: var(--yellow); border: 1px solid rgba(245,166,35,0.3); }
+  .tag.minor { background: rgba(0,119,255,0.15); color: var(--accent2); border: 1px solid rgba(0,119,255,0.3); }
+
+  /* ─── BAR CHART ─── */
+  .bar-chart { display: flex; flex-direction: column; gap: 10px; }
+
+  .bar-row {
+    display: grid;
+    grid-template-columns: 130px 1fr 50px;
+    align-items: center;
+    gap: 10px;
+  }
+
+  .bar-label {
+    font-size: 0.75rem;
+    color: var(--text-dim);
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+
+  .bar-track {
+    height: 8px;
+    background: var(--surface2);
+    border-radius: 4px;
+    overflow: hidden;
+  }
+
+  .bar-fill {
+    height: 100%;
+    border-radius: 4px;
+    transition: width 1s cubic-bezier(0.22, 1, 0.36, 1);
+  }
+
+  .bar-val {
+    font-family: 'IBM Plex Mono', monospace;
+    font-size: 0.72rem;
+    color: var(--text-dim);
+    text-align: right;
+  }
+
+  /* ─── CAPA TABLE ─── */
+  .capa-table { width: 100%; border-collapse: collapse; }
+
+  .capa-table th {
+    font-family: 'IBM Plex Mono', monospace;
+    font-size: 0.6rem;
+    color: var(--text-muted);
+    text-transform: uppercase;
+    letter-spacing: 1.5px;
+    text-align: left;
+    padding: 8px 14px;
+    border-bottom: 1px solid var(--border);
+  }
+
+  .capa-table td {
+    padding: 11px 14px;
+    font-size: 0.78rem;
+    color: var(--text-dim);
+    border-bottom: 1px solid rgba(30,45,69,0.5);
+    vertical-align: middle;
+  }
+
+  .capa-table tr:last-child td { border-bottom: none; }
+  .capa-table tr:hover td { background: rgba(255,255,255,0.02); }
+
+  .capa-id {
+    font-family: 'IBM Plex Mono', monospace;
+    font-size: 0.7rem;
+    color: var(--accent);
+  }
+
+  /* ─── DONUT CHART ─── */
+  .donut-wrap {
+    display: flex;
+    align-items: center;
+    gap: 24px;
+  }
+
+  .donut-svg { flex-shrink: 0; }
+
+  .donut-legend { display: flex; flex-direction: column; gap: 8px; }
+
+  .legend-item {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    font-size: 0.78rem;
+    color: var(--text-dim);
+  }
+
+  .legend-dot {
+    width: 8px; height: 8px;
+    border-radius: 50%;
+    flex-shrink: 0;
+  }
+
+  .legend-pct {
+    margin-left: auto;
+    font-family: 'IBM Plex Mono', monospace;
+    font-size: 0.7rem;
+    color: var(--text-muted);
+    padding-left: 16px;
+  }
+
+  /* ─── TRAINING HEATMAP ─── */
+  .heatmap-grid {
+    display: grid;
+    grid-template-columns: 80px repeat(12, 1fr);
+    gap: 3px;
+    font-family: 'IBM Plex Mono', monospace;
+    font-size: 0.58rem;
+  }
+
+  .hm-header {
+    color: var(--text-muted);
+    text-align: center;
+    padding: 4px 0;
+  }
+
+  .hm-row-label {
+    color: var(--text-dim);
+    display: flex;
+    align-items: center;
+    font-size: 0.65rem;
+  }
+
+  .hm-cell {
+    height: 28px;
+    border-radius: 3px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 0.58rem;
+    color: rgba(255,255,255,0.6);
+    font-weight: 600;
+    cursor: pointer;
+    transition: transform 0.1s, filter 0.1s;
+    position: relative;
+  }
+
+  .hm-cell:hover { transform: scale(1.1); filter: brightness(1.3); z-index: 10; }
+
+  .hm-l0 { background: var(--surface2); color: transparent; }
+  .hm-l1 { background: rgba(0,229,195,0.15); }
+  .hm-l2 { background: rgba(0,229,195,0.35); }
+  .hm-l3 { background: rgba(0,229,195,0.6); }
+  .hm-l4 { background: rgba(0,229,195,0.85); color: #05080f; }
+
+  /* ─── TREND SPARKLINE ─── */
+  .sparklines { display: flex; flex-direction: column; gap: 16px; }
+
+  .spark-row {
+    display: grid;
+    grid-template-columns: 140px 1fr 60px;
+    align-items: center;
+    gap: 12px;
+  }
+
+  .spark-label { font-size: 0.78rem; color: var(--text-dim); }
+
+  .spark-svg { width: 100%; height: 36px; }
+
+  .spark-val {
+    font-family: 'DM Serif Display', serif;
+    font-size: 1.1rem;
+    text-align: right;
+  }
+
+  /* ─── AI INSIGHTS ─── */
+  .insight-list { display: flex; flex-direction: column; gap: 10px; }
+
+  .insight-item {
+    display: flex;
+    gap: 12px;
+    padding: 12px 14px;
+    background: var(--surface2);
+    border-radius: 8px;
+    border-left: 3px solid;
+    transition: background 0.15s;
+  }
+
+  .insight-item:hover { background: rgba(30,45,69,0.8); }
+  .insight-item.critical { border-color: var(--red); }
+  .insight-item.warning { border-color: var(--yellow); }
+  .insight-item.positive { border-color: var(--green); }
+  .insight-item.info { border-color: var(--accent2); }
+
+  .insight-icon { font-size: 1rem; flex-shrink: 0; margin-top: 1px; }
+
+  .insight-text { font-size: 0.78rem; color: var(--text-dim); line-height: 1.5; }
+  .insight-text strong { color: var(--text); font-weight: 600; }
+
+  .insight-time {
+    margin-left: auto;
+    font-family: 'IBM Plex Mono', monospace;
+    font-size: 0.58rem;
+    color: var(--text-muted);
+    flex-shrink: 0;
+    margin-top: 2px;
+  }
+
+  /* ─── PROGRESS RINGS ─── */
+  .ring-row {
+    display: flex;
+    justify-content: space-around;
+    padding: 10px 0;
+  }
+
+  .ring-item { display: flex; flex-direction: column; align-items: center; gap: 8px; }
+
+  .ring-label {
+    font-family: 'IBM Plex Mono', monospace;
+    font-size: 0.6rem;
+    color: var(--text-muted);
+    text-transform: uppercase;
+    letter-spacing: 1px;
+    text-align: center;
+  }
+
+  .ring-val {
+    font-family: 'DM Serif Display', serif;
+    font-size: 0.9rem;
+    text-align: center;
+  }
+
+  /* ─── ANIMATIONS ─── */
+  @keyframes fadeInUp {
+    from { opacity: 0; transform: translateY(16px); }
+    to { opacity: 1; transform: translateY(0); }
+  }
+
+  .kpi-card { animation: fadeInUp 0.5s ease both; }
+  .kpi-card:nth-child(1) { animation-delay: 0.05s; }
+  .kpi-card:nth-child(2) { animation-delay: 0.1s; }
+  .kpi-card:nth-child(3) { animation-delay: 0.15s; }
+  .kpi-card:nth-child(4) { animation-delay: 0.2s; }
+  .kpi-card:nth-child(5) { animation-delay: 0.25s; }
+
+  .card { animation: fadeInUp 0.5s ease both; animation-delay: 0.3s; }
+
+  /* ─── SCROLLBAR ─── */
+  ::-webkit-scrollbar { width: 6px; }
+  ::-webkit-scrollbar-track { background: var(--bg); }
+  ::-webkit-scrollbar-thumb { background: var(--border2); border-radius: 3px; }
+
+  /* ─── TOOLTIP ─── */
+  .tooltip-wrap { position: relative; }
+  .tooltip {
+    position: absolute;
+    bottom: calc(100% + 6px);
+    left: 50%;
+    transform: translateX(-50%);
+    background: var(--surface2);
+    border: 1px solid var(--border2);
+    border-radius: 6px;
+    padding: 6px 10px;
+    font-family: 'IBM Plex Mono', monospace;
+    font-size: 0.65rem;
+    color: var(--text);
+    white-space: nowrap;
+    pointer-events: none;
+    opacity: 0;
+    transition: opacity 0.15s;
+    z-index: 200;
+  }
+  .tooltip-wrap:hover .tooltip { opacity: 1; }
+
+</style>
+</head>
+<body>
+
+<!-- SIDEBAR -->
+<nav class="sidebar">
+  <div class="logo">
+    <div class="logo-mark">QualityPulse</div>
+    <div class="logo-sub">PHARMA · Q1 2026</div>
+  </div>
+  <div class="nav">
+    <div class="nav-section">Overview</div>
+    <div class="nav-item active"><span class="icon">◈</span> Dashboard</div>
+    <div class="nav-item"><span class="icon">◎</span> KPI Monitor</div>
+
+    <div class="nav-section">Quality</div>
+    <div class="nav-item"><span class="icon">⬡</span> CAPA Tracker <span class="nav-badge">7</span></div>
+    <div class="nav-item"><span class="icon">◐</span> Deviations <span class="nav-badge">3</span></div>
+    <div class="nav-item"><span class="icon">◇</span> Audit Findings</div>
+    <div class="nav-item"><span class="icon">◈</span> Change Control</div>
+
+    <div class="nav-section">Training</div>
+    <div class="nav-item"><span class="icon">▤</span> Retraining Plan</div>
+    <div class="nav-item"><span class="icon">◩</span> Competency Map</div>
+    <div class="nav-item"><span class="icon">◫</span> SOP Compliance</div>
+
+    <div class="nav-section">Reports</div>
+    <div class="nav-item"><span class="icon">◰</span> Trend Analysis</div>
+    <div class="nav-item"><span class="icon">◱</span> Regulatory</div>
+  </div>
+  <div class="sidebar-footer">
+    <div class="system-status">
+      <div class="status-dot"></div>
+      ALL SYSTEMS NOMINAL
+    </div>
+  </div>
+</nav>
+
+<!-- MAIN -->
+<div class="main">
+
+  <!-- TOPBAR -->
+  <div class="topbar">
+    <div>
+      <div class="page-title">Quality Intelligence Dashboard</div>
+      <div class="page-sub">CAPA · RETRAINING · KPI — Q1 2026 · 22 MAR</div>
+    </div>
+    <div class="topbar-right">
+      <div class="filter-pill active">⬡ Site: ALL</div>
+      <div class="filter-pill">◐ Dept: ALL</div>
+      <div class="filter-pill">◎ 90 Days ▾</div>
+      <button class="export-btn">↓ Export PDF</button>
+    </div>
+  </div>
+
+  <!-- CONTENT -->
+  <div class="content">
+
+    <!-- KPI ROW -->
+    <div class="kpi-row">
+      <div class="kpi-card green">
+        <div class="kpi-label">CAPA Closure Rate</div>
+        <div class="kpi-value">84%</div>
+        <div class="kpi-delta delta-up">▲ 6% vs last quarter</div>
+      </div>
+      <div class="kpi-card red">
+        <div class="kpi-label">Overdue CAPAs</div>
+        <div class="kpi-value">7</div>
+        <div class="kpi-delta delta-down">▲ +2 this week</div>
+      </div>
+      <div class="kpi-card yellow">
+        <div class="kpi-label">Training Compliance</div>
+        <div class="kpi-value">91%</div>
+        <div class="kpi-delta delta-up">▲ 3% vs Q4 '25</div>
+      </div>
+      <div class="kpi-card blue">
+        <div class="kpi-label">Deviation Rate</div>
+        <div class="kpi-value">1.2%</div>
+        <div class="kpi-delta delta-up">▼ −0.4% improvement</div>
+      </div>
+      <div class="kpi-card purple">
+        <div class="kpi-label">Repeat Deviations</div>
+        <div class="kpi-value">4</div>
+        <div class="kpi-delta delta-neutral">→ Stable vs prior</div>
+      </div>
+    </div>
+
+    <!-- ROW 2: CAPA Table + Donut -->
+    <div class="three-col">
+
+      <!-- CAPA TABLE -->
+      <div class="card">
+        <div class="card-header">
+          <div>
+            <div class="card-title">Active CAPA Register</div>
+            <div class="card-subtitle">Open · In-Progress · Overdue</div>
+          </div>
+          <span class="tag open">7 OPEN</span>
+        </div>
+        <div class="card-body" style="padding:0;">
+          <table class="capa-table">
+            <thead>
+              <tr>
+                <th>CAPA ID</th>
+                <th>Description</th>
+                <th>Owner</th>
+                <th>Due</th>
+                <th>Status</th>
+                <th>Sev.</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr>
+                <td><span class="capa-id">CAPA-0241</span></td>
+                <td>Batch record error — Mfg Line 3</td>
+                <td>J. Park</td>
+                <td><span style="color:var(--red)">Mar 15</span></td>
+                <td><span class="tag overdue">Overdue</span></td>
+                <td><span class="tag critical">Crit</span></td>
+              </tr>
+              <tr>
+                <td><span class="capa-id">CAPA-0238</span></td>
+                <td>Sterility test OOS result</td>
+                <td>M. Russo</td>
+                <td>Mar 28</td>
+                <td><span class="tag in-progress">In Progress</span></td>
+                <td><span class="tag critical">Crit</span></td>
+              </tr>
+              <tr>
+                <td><span class="capa-id">CAPA-0236</span></td>
+                <td>Environmental monitoring exceedance</td>
+                <td>S. Chen</td>
+                <td>Apr 5</td>
+                <td><span class="tag in-progress">In Progress</span></td>
+                <td><span class="tag major">Major</span></td>
+              </tr>
+              <tr>
+                <td><span class="capa-id">CAPA-0233</span></td>
+                <td>SOP deviation – cleaning validation</td>
+                <td>A. Nkosi</td>
+                <td>Apr 12</td>
+                <td><span class="tag open">Open</span></td>
+                <td><span class="tag major">Major</span></td>
+              </tr>
+              <tr>
+                <td><span class="capa-id">CAPA-0229</span></td>
+                <td>Label reconciliation discrepancy</td>
+                <td>T. Müller</td>
+                <td>Apr 18</td>
+                <td><span class="tag open">Open</span></td>
+                <td><span class="tag minor">Minor</span></td>
+              </tr>
+              <tr>
+                <td><span class="capa-id">CAPA-0225</span></td>
+                <td>Compressed air specification failure</td>
+                <td>L. Santos</td>
+                <td>Apr 22</td>
+                <td><span class="tag open">Open</span></td>
+                <td><span class="tag major">Major</span></td>
+              </tr>
+              <tr>
+                <td><span class="capa-id">CAPA-0218</span></td>
+                <td>HPLC calibration out-of-tolerance</td>
+                <td>R. Patel</td>
+                <td>May 1</td>
+                <td><span class="tag open">Open</span></td>
+                <td><span class="tag minor">Minor</span></td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+
+      <!-- CAPA STATUS DONUT -->
+      <div class="card">
+        <div class="card-header">
+          <div>
+            <div class="card-title">CAPA Status</div>
+            <div class="card-subtitle">Distribution · Q1 2026</div>
+          </div>
+        </div>
+        <div class="card-body">
+          <div class="donut-wrap">
+            <svg class="donut-svg" width="110" height="110" viewBox="0 0 110 110">
+              <circle cx="55" cy="55" r="40" fill="none" stroke="#121929" stroke-width="18"/>
+              <!-- Closed: 52%, stroke-dasharray: 52% of 251.3 = 130.7, offset from top -->
+              <circle cx="55" cy="55" r="40" fill="none" stroke="#00e5a0" stroke-width="18"
+                stroke-dasharray="130.7 120.6" stroke-dashoffset="62.8" stroke-linecap="butt"/>
+              <!-- In Progress: 26%, = 65.3 -->
+              <circle cx="55" cy="55" r="40" fill="none" stroke="#ffd166" stroke-width="18"
+                stroke-dasharray="65.3 186" stroke-dashoffset="-67.9" stroke-linecap="butt"/>
+              <!-- Open: 14%, = 35.2 -->
+              <circle cx="55" cy="55" r="40" fill="none" stroke="#ff4d6d" stroke-width="18"
+                stroke-dasharray="35.2 216.1" stroke-dashoffset="-133.2" stroke-linecap="butt"/>
+              <!-- Overdue: 8%, = 20.1 -->
+              <circle cx="55" cy="55" r="40" fill="none" stroke="#ff5c5c" stroke-width="18"
+                stroke-dasharray="20.1 231.2" stroke-dashoffset="-168.4" stroke-linecap="butt"/>
+              <text x="55" y="50" text-anchor="middle" fill="#e8eef8" font-family="DM Serif Display, serif" font-size="16">84</text>
+              <text x="55" y="64" text-anchor="middle" fill="#7a90b0" font-family="IBM Plex Mono, monospace" font-size="7">CLOSED%</text>
+            </svg>
+            <div class="donut-legend">
+              <div class="legend-item"><div class="legend-dot" style="background:var(--green)"></div> Closed <span class="legend-pct">52%</span></div>
+              <div class="legend-item"><div class="legend-dot" style="background:var(--yellow)"></div> In Progress <span class="legend-pct">26%</span></div>
+              <div class="legend-item"><div class="legend-dot" style="background:var(--red)"></div> Open <span class="legend-pct">14%</span></div>
+              <div class="legend-item"><div class="legend-dot" style="background:#ff5c5c"></div> Overdue <span class="legend-pct">8%</span></div>
+            </div>
+          </div>
+
+          <div style="margin-top:22px;">
+            <div class="bar-chart">
+              <div class="bar-row">
+                <div class="bar-label">Manufacturing</div>
+                <div class="bar-track"><div class="bar-fill" style="width:72%; background:var(--red)"></div></div>
+                <div class="bar-val" style="color:var(--red)">9</div>
+              </div>
+              <div class="bar-row">
+                <div class="bar-label">QC Laboratory</div>
+                <div class="bar-track"><div class="bar-fill" style="width:56%; background:var(--yellow)"></div></div>
+                <div class="bar-val" style="color:var(--yellow)">7</div>
+              </div>
+              <div class="bar-row">
+                <div class="bar-label">Supply Chain</div>
+                <div class="bar-track"><div class="bar-fill" style="width:32%; background:var(--accent2)"></div></div>
+                <div class="bar-val" style="color:var(--accent2)">4</div>
+              </div>
+              <div class="bar-row">
+                <div class="bar-label">Regulatory</div>
+                <div class="bar-track"><div class="bar-fill" style="width:16%; background:var(--green)"></div></div>
+                <div class="bar-val" style="color:var(--green)">2</div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- AI INSIGHTS -->
+      <div class="card">
+        <div class="card-header">
+          <div>
+            <div class="card-title">Forecasted Insights</div>
+            <div class="card-subtitle">Automated Quality Forecast</div>
+          </div>
+          <span style="font-size:0.6rem; font-family:'IBM Plex Mono',monospace; color:var(--accent); background:rgba(0,229,195,0.1); border:1px solid rgba(0,229,195,0.2); padding:2px 8px; border-radius:10px;">LIVE</span>
+        </div>
+        <div class="card-body">
+          <div class="insight-list">
+            <div class="insight-item critical">
+              <div class="insight-icon">⚠</div>
+              <div class="insight-text"><strong>CAPA-0241 escalation risk.</strong> 7 days overdue. Batch record errors on Line 3 show a recurring pattern — 3rd occurrence in 6 months.</div>
+              <div class="insight-time">2h ago</div>
+            </div>
+            <div class="insight-item warning">
+              <div class="insight-icon">◐</div>
+              <div class="insight-text"><strong>Mfg Line 3 operators</strong> have the lowest SOP retraining completion rate (61%). Correlated with 4 of 7 open CAPAs.</div>
+              <div class="insight-time">5h ago</div>
+            </div>
+            <div class="insight-item positive">
+              <div class="insight-icon">▲</div>
+              <div class="insight-text"><strong>QC Lab deviation rate</strong> dropped 42% following April competency reassessment. Model attributes to HPLC retraining cohort.</div>
+              <div class="insight-time">1d ago</div>
+            </div>
+            <div class="insight-item info">
+              <div class="insight-icon">◎</div>
+              <div class="insight-text"><strong>Predicted:</strong> Environmental monitoring CAPAs likely to increase in Q2 if HVAC validation SOP is not re-issued before April 15.</div>
+              <div class="insight-time">1d ago</div>
+            </div>
+            <div class="insight-item warning">
+              <div class="insight-icon">◇</div>
+              <div class="insight-text"><strong>14 employees</strong> are overdue for annual GMP refresher. Two are assigned to sterility testing — critical risk.</div>
+              <div class="insight-time">2d ago</div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- ROW 3: Training Heatmap + KPI Trends -->
+    <div class="two-col">
+
+      <!-- TRAINING HEATMAP -->
+      <div class="card">
+        <div class="card-header">
+          <div>
+            <div class="card-title">Retraining Completion Heatmap</div>
+            <div class="card-subtitle">By department × month · 2025–2026</div>
+          </div>
+          <div style="display:flex; gap:6px; align-items:center; font-family:'IBM Plex Mono',monospace; font-size:0.58rem; color:var(--text-muted);">
+            Low
+            <div style="width:10px;height:10px;border-radius:2px;background:rgba(0,229,195,0.15)"></div>
+            <div style="width:10px;height:10px;border-radius:2px;background:rgba(0,229,195,0.4)"></div>
+            <div style="width:10px;height:10px;border-radius:2px;background:rgba(0,229,195,0.7)"></div>
+            <div style="width:10px;height:10px;border-radius:2px;background:rgba(0,229,195,0.9)"></div>
+            High
+          </div>
+        </div>
+        <div class="card-body">
+          <div class="heatmap-grid">
+            <div class="hm-header"></div>
+            <div class="hm-header">A</div><div class="hm-header">M</div><div class="hm-header">J</div>
+            <div class="hm-header">J</div><div class="hm-header">A</div><div class="hm-header">S</div>
+            <div class="hm-header">O</div><div class="hm-header">N</div><div class="hm-header">D</div>
+            <div class="hm-header">J</div><div class="hm-header">F</div><div class="hm-header">M</div>
+
+            <!-- Manufacturing -->
+            <div class="hm-row-label">Mfg</div>
+            <div class="hm-cell hm-l3 tooltip-wrap">78<div class="tooltip">Manufacturing · Apr: 78%</div></div>
+            <div class="hm-cell hm-l3 tooltip-wrap">82<div class="tooltip">Manufacturing · May: 82%</div></div>
+            <div class="hm-cell hm-l2 tooltip-wrap">65<div class="tooltip">Manufacturing · Jun: 65%</div></div>
+            <div class="hm-cell hm-l4 tooltip-wrap">91<div class="tooltip">Manufacturing · Jul: 91%</div></div>
+            <div class="hm-cell hm-l4 tooltip-wrap">94<div class="tooltip">Manufacturing · Aug: 94%</div></div>
+            <div class="hm-cell hm-l3 tooltip-wrap">80<div class="tooltip">Manufacturing · Sep: 80%</div></div>
+            <div class="hm-cell hm-l3 tooltip-wrap">76<div class="tooltip">Manufacturing · Oct: 76%</div></div>
+            <div class="hm-cell hm-l2 tooltip-wrap">58<div class="tooltip">Manufacturing · Nov: 58%</div></div>
+            <div class="hm-cell hm-l3 tooltip-wrap">72<div class="tooltip">Manufacturing · Dec: 72%</div></div>
+            <div class="hm-cell hm-l1 tooltip-wrap">45<div class="tooltip">Manufacturing · Jan: 45%</div></div>
+            <div class="hm-cell hm-l2 tooltip-wrap">61<div class="tooltip">Manufacturing · Feb: 61%</div></div>
+            <div class="hm-cell hm-l2 tooltip-wrap" style="border:1px solid var(--accent)">61<div class="tooltip">Manufacturing · Mar: 61% ← Low Risk</div></div>
+
+            <!-- QC Lab -->
+            <div class="hm-row-label">QC Lab</div>
+            <div class="hm-cell hm-l4 tooltip-wrap">93<div class="tooltip">QC Lab · Apr: 93%</div></div>
+            <div class="hm-cell hm-l4 tooltip-wrap">96<div class="tooltip">QC Lab · May: 96%</div></div>
+            <div class="hm-cell hm-l4 tooltip-wrap">90<div class="tooltip">QC Lab · Jun: 90%</div></div>
+            <div class="hm-cell hm-l4 tooltip-wrap">95<div class="tooltip">QC Lab · Jul: 95%</div></div>
+            <div class="hm-cell hm-l3 tooltip-wrap">88<div class="tooltip">QC Lab · Aug: 88%</div></div>
+            <div class="hm-cell hm-l4 tooltip-wrap">97<div class="tooltip">QC Lab · Sep: 97%</div></div>
+            <div class="hm-cell hm-l4 tooltip-wrap">99<div class="tooltip">QC Lab · Oct: 99%</div></div>
+            <div class="hm-cell hm-l3 tooltip-wrap">85<div class="tooltip">QC Lab · Nov: 85%</div></div>
+            <div class="hm-cell hm-l4 tooltip-wrap">92<div class="tooltip">QC Lab · Dec: 92%</div></div>
+            <div class="hm-cell hm-l4 tooltip-wrap">95<div class="tooltip">QC Lab · Jan: 95%</div></div>
+            <div class="hm-cell hm-l4 tooltip-wrap">97<div class="tooltip">QC Lab · Feb: 97%</div></div>
+            <div class="hm-cell hm-l4 tooltip-wrap">98<div class="tooltip">QC Lab · Mar: 98%</div></div>
+
+            <!-- Supply Chain -->
+            <div class="hm-row-label">Supply</div>
+            <div class="hm-cell hm-l2 tooltip-wrap">66<div class="tooltip">Supply Chain · Apr: 66%</div></div>
+            <div class="hm-cell hm-l3 tooltip-wrap">74<div class="tooltip">Supply Chain · May: 74%</div></div>
+            <div class="hm-cell hm-l3 tooltip-wrap">79<div class="tooltip">Supply Chain · Jun: 79%</div></div>
+            <div class="hm-cell hm-l3 tooltip-wrap">83<div class="tooltip">Supply Chain · Jul: 83%</div></div>
+            <div class="hm-cell hm-l3 tooltip-wrap">77<div class="tooltip">Supply Chain · Aug: 77%</div></div>
+            <div class="hm-cell hm-l2 tooltip-wrap">68<div class="tooltip">Supply Chain · Sep: 68%</div></div>
+            <div class="hm-cell hm-l3 tooltip-wrap">75<div class="tooltip">Supply Chain · Oct: 75%</div></div>
+            <div class="hm-cell hm-l3 tooltip-wrap">81<div class="tooltip">Supply Chain · Nov: 81%</div></div>
+            <div class="hm-cell hm-l2 tooltip-wrap">64<div class="tooltip">Supply Chain · Dec: 64%</div></div>
+            <div class="hm-cell hm-l3 tooltip-wrap">78<div class="tooltip">Supply Chain · Jan: 78%</div></div>
+            <div class="hm-cell hm-l3 tooltip-wrap">84<div class="tooltip">Supply Chain · Feb: 84%</div></div>
+            <div class="hm-cell hm-l4 tooltip-wrap">89<div class="tooltip">Supply Chain · Mar: 89%</div></div>
+
+            <!-- Regulatory -->
+            <div class="hm-row-label">Reg.</div>
+            <div class="hm-cell hm-l4 tooltip-wrap">98<div class="tooltip">Regulatory · Apr: 98%</div></div>
+            <div class="hm-cell hm-l4 tooltip-wrap">100<div class="tooltip">Regulatory · May: 100%</div></div>
+            <div class="hm-cell hm-l4 tooltip-wrap">97<div class="tooltip">Regulatory · Jun: 97%</div></div>
+            <div class="hm-cell hm-l4 tooltip-wrap">99<div class="tooltip">Regulatory · Jul: 99%</div></div>
+            <div class="hm-cell hm-l4 tooltip-wrap">100<div class="tooltip">Regulatory · Aug: 100%</div></div>
+            <div class="hm-cell hm-l4 tooltip-wrap">98<div class="tooltip">Regulatory · Sep: 98%</div></div>
+            <div class="hm-cell hm-l4 tooltip-wrap">95<div class="tooltip">Regulatory · Oct: 95%</div></div>
+            <div class="hm-cell hm-l4 tooltip-wrap">97<div class="tooltip">Regulatory · Nov: 97%</div></div>
+            <div class="hm-cell hm-l4 tooltip-wrap">99<div class="tooltip">Regulatory · Dec: 99%</div></div>
+            <div class="hm-cell hm-l4 tooltip-wrap">100<div class="tooltip">Regulatory · Jan: 100%</div></div>
+            <div class="hm-cell hm-l4 tooltip-wrap">100<div class="tooltip">Regulatory · Feb: 100%</div></div>
+            <div class="hm-cell hm-l4 tooltip-wrap">100<div class="tooltip">Regulatory · Mar: 100%</div></div>
+
+            <!-- Engineering -->
+            <div class="hm-row-label">Eng.</div>
+            <div class="hm-cell hm-l2 tooltip-wrap">62<div class="tooltip">Engineering · Apr: 62%</div></div>
+            <div class="hm-cell hm-l1 tooltip-wrap">48<div class="tooltip">Engineering · May: 48%</div></div>
+            <div class="hm-cell hm-l3 tooltip-wrap">77<div class="tooltip">Engineering · Jun: 77%</div></div>
+            <div class="hm-cell hm-l3 tooltip-wrap">80<div class="tooltip">Engineering · Jul: 80%</div></div>
+            <div class="hm-cell hm-l2 tooltip-wrap">65<div class="tooltip">Engineering · Aug: 65%</div></div>
+            <div class="hm-cell hm-l3 tooltip-wrap">74<div class="tooltip">Engineering · Sep: 74%</div></div>
+            <div class="hm-cell hm-l2 tooltip-wrap">59<div class="tooltip">Engineering · Oct: 59%</div></div>
+            <div class="hm-cell hm-l3 tooltip-wrap">71<div class="tooltip">Engineering · Nov: 71%</div></div>
+            <div class="hm-cell hm-l3 tooltip-wrap">78<div class="tooltip">Engineering · Dec: 78%</div></div>
+            <div class="hm-cell hm-l2 tooltip-wrap">63<div class="tooltip">Engineering · Jan: 63%</div></div>
+            <div class="hm-cell hm-l3 tooltip-wrap">75<div class="tooltip">Engineering · Feb: 75%</div></div>
+            <div class="hm-cell hm-l3 tooltip-wrap">79<div class="tooltip">Engineering · Mar: 79%</div></div>
+          </div>
+        </div>
+      </div>
+
+      <!-- KPI TREND SPARKLINES -->
+      <div class="card">
+        <div class="card-header">
+          <div>
+            <div class="card-title">KPI Trend Lines</div>
+            <div class="card-subtitle">12-Month Rolling · Key Quality Metrics</div>
+          </div>
+        </div>
+        <div class="card-body">
+          <div class="sparklines">
+
+            <!-- CAPA Closure Rate -->
+            <div class="spark-row">
+              <div class="spark-label">CAPA Closure %</div>
+              <svg class="spark-svg" viewBox="0 0 200 36" preserveAspectRatio="none">
+                <polyline fill="none" stroke="rgba(0,229,160,0.3)" stroke-width="1"
+                  points="0,28 18,26 36,29 54,24 72,22 90,20 108,18 126,22 144,16 162,14 180,12 200,8"/>
+                <polyline fill="none" stroke="var(--green)" stroke-width="2"
+                  points="0,28 18,26 36,29 54,24 72,22 90,20 108,18 126,22 144,16 162,14 180,12 200,8"/>
+                <circle cx="200" cy="8" r="3" fill="var(--green)"/>
+              </svg>
+              <div class="spark-val" style="color:var(--green)">84%</div>
+            </div>
+
+            <!-- Deviation Rate -->
+            <div class="spark-row">
+              <div class="spark-label">Deviation Rate %</div>
+              <svg class="spark-svg" viewBox="0 0 200 36" preserveAspectRatio="none">
+                <polyline fill="none" stroke="rgba(255,77,109,0.3)" stroke-width="1"
+                  points="0,8 18,10 36,7 54,12 72,15 90,14 108,18 126,16 144,20 162,22 180,24 200,26"/>
+                <polyline fill="none" stroke="var(--red)" stroke-width="2"
+                  points="0,8 18,10 36,7 54,12 72,15 90,14 108,18 126,16 144,20 162,22 180,24 200,26"/>
+                <circle cx="200" cy="26" r="3" fill="var(--red)"/>
+              </svg>
+              <div class="spark-val" style="color:var(--green)">1.2%</div>
+            </div>
+
+            <!-- Training Compliance -->
+            <div class="spark-row">
+              <div class="spark-label">Training Compliance</div>
+              <svg class="spark-svg" viewBox="0 0 200 36" preserveAspectRatio="none">
+                <polyline fill="none" stroke="rgba(255,209,102,0.3)" stroke-width="1"
+                  points="0,20 18,22 36,18 54,16 72,20 90,14 108,12 126,16 144,10 162,8 180,10 200,6"/>
+                <polyline fill="none" stroke="var(--yellow)" stroke-width="2"
+                  points="0,20 18,22 36,18 54,16 72,20 90,14 108,12 126,16 144,10 162,8 180,10 200,6"/>
+                <circle cx="200" cy="6" r="3" fill="var(--yellow)"/>
+              </svg>
+              <div class="spark-val" style="color:var(--yellow)">91%</div>
+            </div>
+
+            <!-- Repeat Deviations -->
+            <div class="spark-row">
+              <div class="spark-label">Repeat Deviations</div>
+              <svg class="spark-svg" viewBox="0 0 200 36" preserveAspectRatio="none">
+                <polyline fill="none" stroke="rgba(179,136,255,0.3)" stroke-width="1"
+                  points="0,10 18,12 36,8 54,14 72,10 90,16 108,12 126,14 144,18 162,16 180,18 200,18"/>
+                <polyline fill="none" stroke="var(--purple)" stroke-width="2"
+                  points="0,10 18,12 36,8 54,14 72,10 90,16 108,12 126,14 144,18 162,16 180,18 200,18"/>
+                <circle cx="200" cy="18" r="3" fill="var(--purple)"/>
+              </svg>
+              <div class="spark-val" style="color:var(--purple)">4</div>
+            </div>
+
+            <!-- OOS Events -->
+            <div class="spark-row">
+              <div class="spark-label">OOS Events</div>
+              <svg class="spark-svg" viewBox="0 0 200 36" preserveAspectRatio="none">
+                <polyline fill="none" stroke="rgba(0,119,255,0.3)" stroke-width="1"
+                  points="0,14 18,10 36,16 54,8 72,12 90,6 108,10 126,8 144,12 162,8 180,6 200,4"/>
+                <polyline fill="none" stroke="var(--accent2)" stroke-width="2"
+                  points="0,14 18,10 36,16 54,8 72,12 90,6 108,10 126,8 144,12 162,8 180,6 200,4"/>
+                <circle cx="200" cy="4" r="3" fill="var(--accent2)"/>
+              </svg>
+              <div class="spark-val" style="color:var(--accent2)">3</div>
+            </div>
+
+            <!-- Right First Time -->
+            <div class="spark-row">
+              <div class="spark-label">Right First Time</div>
+              <svg class="spark-svg" viewBox="0 0 200 36" preserveAspectRatio="none">
+                <polyline fill="none" stroke="rgba(0,229,195,0.3)" stroke-width="1"
+                  points="0,22 18,20 36,24 54,18 72,16 90,18 108,14 126,12 144,10 162,10 180,8 200,6"/>
+                <polyline fill="none" stroke="var(--accent)" stroke-width="2"
+                  points="0,22 18,20 36,24 54,18 72,16 90,18 108,14 126,12 144,10 162,10 180,8 200,6"/>
+                <circle cx="200" cy="6" r="3" fill="var(--accent)"/>
+              </svg>
+              <div class="spark-val" style="color:var(--accent)">96%</div>
+            </div>
+
+          </div>
+
+          <!-- Compliance rings -->
+          <div style="margin-top:20px; padding-top:18px; border-top:1px solid var(--border);">
+            <div style="font-family:'IBM Plex Mono',monospace; font-size:0.6rem; color:var(--text-muted); text-transform:uppercase; letter-spacing:1.5px; margin-bottom:14px;">SOP Compliance by Category</div>
+            <div class="ring-row">
+              <!-- SVG rings -->
+              <div class="ring-item">
+                <svg width="64" height="64" viewBox="0 0 64 64">
+                  <circle cx="32" cy="32" r="26" fill="none" stroke="var(--surface2)" stroke-width="8"/>
+                  <circle cx="32" cy="32" r="26" fill="none" stroke="var(--green)" stroke-width="8"
+                    stroke-dasharray="150 14" stroke-dashoffset="41" stroke-linecap="round"/>
+                  <text x="32" y="36" text-anchor="middle" fill="var(--green)" font-family="DM Serif Display,serif" font-size="13">97</text>
+                </svg>
+                <div class="ring-label">GMP<br>General</div>
+              </div>
+              <div class="ring-item">
+                <svg width="64" height="64" viewBox="0 0 64 64">
+                  <circle cx="32" cy="32" r="26" fill="none" stroke="var(--surface2)" stroke-width="8"/>
+                  <circle cx="32" cy="32" r="26" fill="none" stroke="var(--yellow)" stroke-width="8"
+                    stroke-dasharray="131 33" stroke-dashoffset="41" stroke-linecap="round"/>
+                  <text x="32" y="36" text-anchor="middle" fill="var(--yellow)" font-family="DM Serif Display,serif" font-size="13">85</text>
+                </svg>
+                <div class="ring-label">Sterile<br>Ops</div>
+              </div>
+              <div class="ring-item">
+                <svg width="64" height="64" viewBox="0 0 64 64">
+                  <circle cx="32" cy="32" r="26" fill="none" stroke="var(--surface2)" stroke-width="8"/>
+                  <circle cx="32" cy="32" r="26" fill="none" stroke="var(--red)" stroke-width="8"
+                    stroke-dasharray="97 67" stroke-dashoffset="41" stroke-linecap="round"/>
+                  <text x="32" y="36" text-anchor="middle" fill="var(--red)" font-family="DM Serif Display,serif" font-size="13">63</text>
+                </svg>
+                <div class="ring-label">Clean<br>Room</div>
+              </div>
+              <div class="ring-item">
+                <svg width="64" height="64" viewBox="0 0 64 64">
+                  <circle cx="32" cy="32" r="26" fill="none" stroke="var(--surface2)" stroke-width="8"/>
+                  <circle cx="32" cy="32" r="26" fill="none" stroke="var(--accent2)" stroke-width="8"
+                    stroke-dasharray="143 21" stroke-dashoffset="41" stroke-linecap="round"/>
+                  <text x="32" y="36" text-anchor="middle" fill="var(--accent2)" font-family="DM Serif Display,serif" font-size="13">93</text>
+                </svg>
+                <div class="ring-label">Data<br>Integrity</div>
+              </div>
+            </div>
+          </div>
+
+        </div>
+      </div>
+    </div>
+
+    <!-- ROOT CAUSE BAR -->
+    <div class="card">
+      <div class="card-header">
+        <div>
+          <div class="card-title">Root Cause Analysis — CAPA Source Distribution</div>
+          <div class="card-subtitle">Pareto · Q1 2026 · 41 total events</div>
+        </div>
+        <span class="tag in-progress">Pareto 80/20</span>
+      </div>
+      <div class="card-body">
+        <div style="display:grid; grid-template-columns:repeat(7,1fr); gap:12px; align-items:end; height:140px;">
+          <!-- Bars vertically -->
+          <div style="display:flex;flex-direction:column;align-items:center;justify-content:flex-end;gap:6px;">
+            <div style="font-family:'IBM Plex Mono',monospace;font-size:0.65rem;color:var(--red)">32%</div>
+            <div style="width:100%;background:linear-gradient(to top,var(--red),rgba(255,77,109,0.4));border-radius:4px 4px 0 0;height:45%;"></div>
+            <div style="font-size:0.65rem;color:var(--text-muted);text-align:center;line-height:1.3">Human<br>Error</div>
+          </div>
+          <div style="display:flex;flex-direction:column;align-items:center;justify-content:flex-end;gap:6px;">
+            <div style="font-family:'IBM Plex Mono',monospace;font-size:0.65rem;color:var(--yellow)">24%</div>
+            <div style="width:100%;background:linear-gradient(to top,var(--yellow),rgba(255,209,102,0.3));border-radius:4px 4px 0 0;height:34%;"></div>
+            <div style="font-size:0.65rem;color:var(--text-muted);text-align:center;line-height:1.3">Procedure<br>Gap</div>
+          </div>
+          <div style="display:flex;flex-direction:column;align-items:center;justify-content:flex-end;gap:6px;">
+            <div style="font-family:'IBM Plex Mono',monospace;font-size:0.65rem;color:var(--accent2)">18%</div>
+            <div style="width:100%;background:linear-gradient(to top,var(--accent2),rgba(0,119,255,0.3));border-radius:4px 4px 0 0;height:26%;"></div>
+            <div style="font-size:0.65rem;color:var(--text-muted);text-align:center;line-height:1.3">Equipment<br>Failure</div>
+          </div>
+          <div style="display:flex;flex-direction:column;align-items:center;justify-content:flex-end;gap:6px;">
+            <div style="font-family:'IBM Plex Mono',monospace;font-size:0.65rem;color:var(--purple)">12%</div>
+            <div style="width:100%;background:linear-gradient(to top,var(--purple),rgba(179,136,255,0.3));border-radius:4px 4px 0 0;height:17%;"></div>
+            <div style="font-size:0.65rem;color:var(--text-muted);text-align:center;line-height:1.3">Material<br>Quality</div>
+          </div>
+          <div style="display:flex;flex-direction:column;align-items:center;justify-content:flex-end;gap:6px;">
+            <div style="font-family:'IBM Plex Mono',monospace;font-size:0.65rem;color:var(--accent)">7%</div>
+            <div style="width:100%;background:linear-gradient(to top,var(--accent),rgba(0,229,195,0.3));border-radius:4px 4px 0 0;height:10%;"></div>
+            <div style="font-size:0.65rem;color:var(--text-muted);text-align:center;line-height:1.3">System/<br>IT</div>
+          </div>
+          <div style="display:flex;flex-direction:column;align-items:center;justify-content:flex-end;gap:6px;">
+            <div style="font-family:'IBM Plex Mono',monospace;font-size:0.65rem;color:var(--text-muted)">5%</div>
+            <div style="width:100%;background:var(--border2);border-radius:4px 4px 0 0;height:7%;"></div>
+            <div style="font-size:0.65rem;color:var(--text-muted);text-align:center;line-height:1.3">Environ.<br>Control</div>
+          </div>
+          <div style="display:flex;flex-direction:column;align-items:center;justify-content:flex-end;gap:6px;">
+            <div style="font-family:'IBM Plex Mono',monospace;font-size:0.65rem;color:var(--text-muted)">2%</div>
+            <div style="width:100%;background:var(--border);border-radius:4px 4px 0 0;height:3%;"></div>
+            <div style="font-size:0.65rem;color:var(--text-muted);text-align:center;line-height:1.3">Other</div>
+          </div>
+        </div>
+        <div style="margin-top:14px; padding-top:12px; border-top: 1px solid var(--border); display:flex; gap:24px; font-size:0.75rem; color:var(--text-dim);">
+          <span>🔑 <strong style="color:var(--text)">Root cause insight:</strong> 56% of CAPAs trace to human error or procedure gaps — the primary retraining opportunity.</span>
+          <span style="margin-left:auto; font-family:'IBM Plex Mono',monospace; font-size:0.65rem; color:var(--accent)">Top 2 causes → 80% volume</span>
+        </div>
+      </div>
+    </div>
+
+  </div><!-- /content -->
+</div><!-- /main -->
+
+<script>
+  // Animate bars on load
+  document.querySelectorAll('.bar-fill').forEach((el, i) => {
+    const target = el.style.width;
+    el.style.width = '0%';
+    setTimeout(() => { el.style.width = target; }, 300 + i * 80);
+  });
+
+  // Nav interaction
+  document.querySelectorAll('.nav-item').forEach(item => {
+    item.addEventListener('click', function() {
+      document.querySelectorAll('.nav-item').forEach(n => n.classList.remove('active'));
+      this.classList.add('active');
+    });
+  });
+
+  // Filter pills
+  document.querySelectorAll('.filter-pill').forEach(pill => {
+    pill.addEventListener('click', function() {
+      this.classList.toggle('active');
+    });
+  });
+
+  // Export button feedback
+  document.querySelector('.export-btn').addEventListener('click', function() {
+    this.textContent = '✓ Exported!';
+    setTimeout(() => { this.textContent = '↓ Export PDF'; }, 1800);
+  });
+</script>
+</body>
+</html>
